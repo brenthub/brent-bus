@@ -1,8 +1,10 @@
 package cn.brent.bus.server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.math.NumberUtils;
@@ -16,6 +18,8 @@ import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
+import com.alibaba.fastjson.JSONObject;
+
 import cn.brent.bus.Protocol;
 
 
@@ -23,17 +27,15 @@ public class BusServer {
 	
 	private Logger logger = LoggerFactory.getLogger(BusServer.class);
 	
+	private static final String BROKER_ID = "BusServer";
+	
 	private Context ctx;
 	private Socket socket;
 	private int port;
-	private String broker_id = "BUS01";
 	private String register_token;
-	
-	
 	
 	private Map<String, WorkerInfo> workers;
 	private Map<String, ServiceInfo> services;
-	private LinkedList<ZMsg> requests;
 	private Poller poller;
 	private int heartbeat_expiry;
 	
@@ -55,20 +57,15 @@ public class BusServer {
 		}
 		this.workers = new HashMap<String, WorkerInfo>();
 		this.services = new HashMap<String, ServiceInfo>();
-		this.requests = new LinkedList<ZMsg>();
 		this.poller = new ZMQ.Poller(1);
 		this.socket = ctx.socket(ZMQ.ROUTER);
-		this.socket.setIdentity(broker_id.getBytes());
+		this.socket.setIdentity(BROKER_ID.getBytes());
 		String address = String.format("tcp://*:%d", port);
 		this.socket.bind(address);
 		logger.info("BusServer bind "+address);
 		return true;
 	}
 
-	public static void main(String[] args) {
-		new BusServer(ZMQ.context(1)).start();
-	}
-	
 	public void start(){
 		new Thread(new Runnable() {
 			@Override
@@ -115,11 +112,121 @@ public class BusServer {
 					routeProcess(sender,msg);
 				} else if (Protocol.MDPQ.equals(mdp)){
 					queueProcess(sender,msg);
+				} else if (Protocol.MDPT.equals(mdp)){
+					probeProcess(sender,msg);
+				} else if (Protocol.MDPM.equals(mdp)){
+					monitorProcess(sender,msg);
+				} else{
+					msg.destroy();
+					sender.destroy();
 				}
 			}
 		}
 	}
 	
+	/**
+	 * MDPM 处理
+	 * @param sender
+	 * @param msg
+	 */
+	private void monitorProcess(ZFrame sender, ZMsg msg) {
+		if(msg.size()<2){
+			msg.destroy();
+			reply(Protocol.MDPM, sender, "400", "<token>,<command> frame required");
+			return;
+		}
+		String token = msg.popString();
+		String cmd = msg.popString();
+
+		if(this.register_token!=null && !register_token.equals(token)){
+			reply(Protocol.MDPM, sender, "403", "wrong administrator token");
+		}
+
+		if(cmd.equals("ls")){
+			monitorLsHandler(sender, msg);
+		} else if(cmd.equals("clear")){
+			monitorClearHandler(sender, msg);
+		} else if(cmd.equals("del")){
+			monitorDelHandler(sender, msg);
+		} else {
+			reply(Protocol.MDPM, sender, "404", "unknown command");
+		}
+	}
+
+	private void monitorDelHandler(ZFrame sender, ZMsg msg) {
+		if(msg.size() != 1){// clear svc
+			reply(Protocol.MDPM, sender, "400", "service name required");
+			return;
+		}
+		String service_name=msg.popString();
+		ServiceInfo  info = services.get(service_name);
+		if(info!=null){
+			Iterator<WorkerInfo> inter =  info.getWorkers().iterator();
+			while(inter.hasNext()){
+				WorkerInfo worker=inter.next();
+				ZMsg remsg=new ZMsg();
+				remsg.add("service is going to be destroyed by broker");
+				workerCommand(worker.getAddress(), Protocol.MDPW_DISC, remsg);
+				inter.remove();
+			}
+			services.remove(service_name);
+			reply(Protocol.MDPM, sender, "200", "OK");
+		}else{
+			reply(Protocol.MDPM, sender, "404", String.format("service( %s ), not found", service_name));
+		}
+	}
+
+	private void monitorClearHandler(ZFrame sender, ZMsg msg) {
+		if(msg.size() != 1){// clear svc
+			reply(Protocol.MDPM, sender, "400", "service name required");
+			return;
+		}
+		String service_name=msg.popString();
+		ServiceInfo  info = services.get(service_name);
+		if(info!=null){
+			if(info.getRequests().size()>0){
+				for(ZMsg t = dequeRequest(info);t!=null;t = dequeRequest(info)){
+					t.destroy();
+				}
+			}
+			reply(Protocol.MDPM, sender, "200", "OK");
+		}else{
+			reply(Protocol.MDPM, sender, "404", String.format("service( %s ), not found", service_name));
+		}
+	}
+
+	private void monitorLsHandler(ZFrame sender, ZMsg msg) {
+		List<Map<String,Object>> re=new ArrayList<Map<String,Object>>();
+		for(ServiceInfo info:services.values()){
+			Map<String,Object> t=new HashMap<String, Object>();
+			t.put("name", info.getName());
+			t.put("type", info.getType());
+			t.put("token", info.getToken());
+			t.put("mq_size", info.getMq_size());
+			t.put("request_size", info.getRequests().size());
+			t.put("worker_size", info.getWorkers().size());
+			t.put("serve_at", info.getServe_at());
+			re.add(t);
+		}
+		reply(Protocol.MDPM, sender, "200", JSONObject.toJSONString(re));
+	}
+
+
+	/**
+	 * MDPT 处理
+	 * @param sender
+	 * @param msg
+	 */
+	private void probeProcess(ZFrame sender, ZMsg msg) {
+		msg.destroy();
+		reply(Protocol.MDPT, sender, null, null);
+	}
+
+	/**
+	 * MDPQ 处理
+	 * @param sender
+	 * @param msg
+	 */
 	private void queueProcess(ZFrame sender, ZMsg msg) {
 		if (msg.size() < 3) {
 			reply(Protocol.MDPQ, sender, "400", "service, token, peerid required");
@@ -346,7 +453,7 @@ public class BusServer {
 	 */
 	private void clientProcess(ZFrame sender, ZMsg msg) {
 		if(msg.size()<2){
-			reply(Protocol.MDPC, sender, Protocol.REQ_ERR, "service, token required");
+			reply(Protocol.MDPC, sender, "400", "service, token required");
 			return;
 		}
 		
@@ -354,12 +461,12 @@ public class BusServer {
 		String token = msg.popString();
 		ServiceInfo service=this.services.get(service_name);
 		if(service==null){
-			reply(Protocol.MDPC, sender,  Protocol.REQ_ERR, "service not found");
+			reply(Protocol.MDPC, sender,  "404", "service not found");
 			return;
 		}
 		
 		if(service.getToken()!=null&&!service.getToken().equals(token)){
-			reply(Protocol.MDPC, sender,  Protocol.REQ_ERR, "forbidden, wrong token");
+			reply(Protocol.MDPC, sender,  "403", "forbidden, wrong token");
 			return;
 		}
 		msg.wrap(sender);

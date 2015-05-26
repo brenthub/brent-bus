@@ -18,7 +18,10 @@ public class ClientPool {
 	public ClientPool(Context ctx,String host,int port,Integer timeout,ClientPoolConfig config) {
 		if (ctx == null) {
 			this.ctx = ZMQ.context(1);
+		}else{
+			this.ctx=ctx;
 		}
+		
 		if(config==null){
 			config = new ClientPoolConfig();
 		}

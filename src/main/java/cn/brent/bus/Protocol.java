@@ -20,8 +20,6 @@ public class Protocol {
 	/**模式-发布订阅 */
 	public static final int MODE_PUBSUB = 2;
 	
-	/**请求-异常*/
-	public static final String REQ_ERR = "500";
 	/**请求-成功*/
 	public static final String REQ_SUCC = "200";
 	

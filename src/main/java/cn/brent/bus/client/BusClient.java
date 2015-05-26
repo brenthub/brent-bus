@@ -86,7 +86,7 @@ public class BusClient {
 			}
 			res.pollFirst();
 			res.pollFirst();
-			if(Protocol.REQ_ERR.equals(res.popString())){
+			if(!Protocol.REQ_SUCC.equals(res.popString())){
 				throw new BusException(res.popString());
 			}
 			res.pollFirst();
@@ -116,7 +116,7 @@ public class BusClient {
 				throw new BusException("[<empty>, <header>, <msg_id>] frames required");
 			}
 			res.pollFirst();
-			if(Protocol.REQ_ERR.equals(res.popString())){
+			if(!Protocol.REQ_SUCC.equals(res.popString())){
 				throw new BusException(res.popString());
 			}
 			return res;
@@ -199,12 +199,14 @@ public class BusClient {
 	}
 
 	public ZMsg monitor(String cmd) {
-		return this.monitor("", cmd);
+		return this.monitor("", cmd, null);
 	}
 	
-	public ZMsg monitor(String token, String cmd) {
-		ZMsg message=new ZMsg();
-		message.add(cmd);
+	public ZMsg monitor(String token, String cmd,ZMsg message) {
+		if(message==null){
+			message=new ZMsg();
+		}
+		message.addFirst(cmd);
 		message.addFirst(token);
 		message.addFirst(Protocol.MDPM);
 		message.addFirst("");
@@ -215,9 +217,12 @@ public class BusClient {
 			if (res.size() < 3) {
 				throw new BusException("[<empty>, <header>, <msg_id>] frames required");
 			}
+			
 			res.pollFirst();
 			res.pollFirst();
-			res.pollFirst();
+			if(!Protocol.REQ_SUCC.equals(res.popString())){
+				throw new BusException(res.popString());
+			}
 			return res;
 		} else {
 			this.reconnect();
