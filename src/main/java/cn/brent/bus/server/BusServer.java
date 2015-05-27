@@ -140,8 +140,6 @@ public class BusServer {
 					continue;
 				}
 
-				logger.debug(msg.toString());
-
 				ZFrame sender = msg.pollFirst();
 				String empty = msg.popString();
 				String mdp = msg.popString();

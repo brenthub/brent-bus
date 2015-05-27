@@ -2,6 +2,8 @@ package cn.brent.bus.worker;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -32,6 +34,7 @@ public class BusWork {
 	protected boolean registered = false;
 	protected boolean stop = false;
 	protected long heartbeatAt = System.currentTimeMillis();
+	private CountDownLatch count=new CountDownLatch(1);
 	
 	public BusWork(Context ctx,String host,int port,String registerToken, WorkHandler workHandler) {
 		this.workHandler=workHandler;
@@ -69,10 +72,27 @@ public class BusWork {
 	}
 	
 	public void start(){ 
+		if(!this.registered){
+			this.register(); 
+		}
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
 				processMsg();
+			}
+		}).start();
+		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while(!stop){
+					try {
+						count.await(Protocol.HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS);
+						sendHeartbeat();
+					} catch (InterruptedException e) {
+					}
+				}
+				
 			}
 		}).start();
 	}
@@ -81,14 +101,11 @@ public class BusWork {
 	 * 开始服务
 	 */
 	public void processMsg(){ 
-		if(!this.registered){
-			this.register(); 
-		}
 		this.stop=false;
 		while(!stop){
 			ZMsg res = ZMsg.recvMsg(this.socket);
-			logger.debug(res.toString());
 			if( res.size() < 3){
+				stop=true;
 				throw new BusException("[<empty> <header>, <cmd>] frames required");
 			}
 			
@@ -98,6 +115,7 @@ public class BusWork {
 			
 			if(Protocol.MDPW_JOB.equals(cmd)){//收到任务
 				if(res.size() < 2){
+					stop=true;
 					throw new BusException("[<sock_id> <msg_id>] frames required");
 				}
 				ZFrame  recvSockId = res.unwrap();
@@ -110,11 +128,13 @@ public class BusWork {
 				this.reply(recvSockId,recvMsgId, msg);
 				this.sendIdle();//发送空闲指定
 			} else if(Protocol.MDPW_DISC.equals(cmd)){ //服务端异常
+				stop=true;
 				throw new BusException(res.popString()); 
 			} else if(Protocol.MDPW_SYNC.equals(cmd)){//服务端请求注册
 				res.destroy();
 				this.register();
 			} else {
+				stop=true;
 				throw new BusException("unknown worker command");
 			} 
 		} 
@@ -135,7 +155,6 @@ public class BusWork {
 		msg.addFirst(recvSockId); 
 		msg.addFirst(Protocol.MDPX);
 		msg.addFirst("");
-		logger.debug(msg.toString());
 		return msg.send(this.socket); 
 	}
 	

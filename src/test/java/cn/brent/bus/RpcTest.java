@@ -51,7 +51,7 @@ public class RpcTest {
 		RpcWorkHandler rpc=new RpcWorkHandler("XxxServer");
 		rpc.addModule("test",new XxxServer());
 		rpc.addModule("a",new XxxServer());
-		wc.registerWorker(rpc);
+		wc.registerWorker(rpc,1);
 		
 		SubsMsgHandler sub=new SubsMsgHandler() {
 			@Override
@@ -59,7 +59,7 @@ public class RpcTest {
 				System.out.println("#####################"+arg);
 			}
 		};
-		wc.registerWorker(new SubsRpcHandler("tstopic", sub).addTopic("top1"));
+		wc.registerWorker(new SubsRpcHandler("tstopic", sub).addTopic("top1"),1);
 	}
 	
 	@Test
@@ -92,7 +92,7 @@ public class RpcTest {
 		a.publish("aaa");
 		a.publish("bbb");
 		try {
-			Thread.sleep(2000000000);
+			Thread.sleep(20000);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}

@@ -25,7 +25,7 @@ public class MinitorTest {
 		RpcWorkHandler rpc=new RpcWorkHandler("XxxServer");
 		rpc.addModule("test",new XxxServer());
 		rpc.addModule("a",new XxxServer());
-		wc.registerWorker(rpc);
+		wc.registerWorker(rpc,30);
 		
 		SubsMsgHandler sub=new SubsMsgHandler() {
 			@Override
@@ -33,7 +33,7 @@ public class MinitorTest {
 				System.out.println("#####################"+arg);
 			}
 		};
-		wc.registerWorker(new SubsRpcHandler("tstopic", sub).addTopic("top1"));
+		wc.registerWorker(new SubsRpcHandler("tstopic", sub).addTopic("top1"),30);
 	}
 	
 	@Test
@@ -52,16 +52,11 @@ public class MinitorTest {
 		m=client.monitor("","clear",msg);
 		m.dump();
 		
-		msg=new ZMsg();
-		msg.add("XxxServer");
-		m=client.monitor("","del",msg);
-		m.dump();
+//		msg=new ZMsg();
+//		msg.add("XxxServer");
+//		m=client.monitor("","del",msg);
+//		m.dump();
 		
-		try {
-			Thread.sleep(100000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
 	}
 	
 }

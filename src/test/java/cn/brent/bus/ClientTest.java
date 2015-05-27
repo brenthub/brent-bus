@@ -50,7 +50,7 @@ public class ClientTest {
 			public Mode getMode() {
 				return Mode.MODE_LB;
 			}
-		});
+		},2);
 		try {
 			Thread.sleep(1000);
 		} catch (InterruptedException e) {

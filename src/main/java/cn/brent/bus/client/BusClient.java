@@ -116,6 +116,7 @@ public class BusClient {
 				throw new BusException("[<empty>, <header>, <msg_id>] frames required");
 			}
 			res.pollFirst();
+			res.pollFirst();
 			if(!Protocol.REQ_SUCC.equals(res.popString())){
 				throw new BusException(res.popString());
 			}
@@ -137,23 +138,6 @@ public class BusClient {
 	 */
 	public boolean publish(String service, String token, String topic,ZMsg message) {
 		message.addFirst(topic);
-		ZMsg res = this.send(service,token, message);
-		String status = res.popString();
-		if (status != null && status.equals("200")) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * 广播消息
-	 * @param service
-	 * @param token
-	 * @param message
-	 * @param timeout
-	 * @return
-	 */
-	public boolean broadcast(String service, String token, ZMsg message) {
 		ZMsg res = this.send(service,token, message);
 		String status = res.popString();
 		if (status != null && status.equals("200")) {
