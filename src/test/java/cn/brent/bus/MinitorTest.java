@@ -52,6 +52,16 @@ public class MinitorTest {
 		m=client.monitor("","clear",msg);
 		m.dump();
 		
+		msg=new ZMsg();
+		msg.add("XxxServer");
+		m=client.monitor("","del",msg);
+		m.dump();
+		
+		try {
+			Thread.sleep(100000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 }
