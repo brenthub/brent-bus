@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+<title>BUS Monitor</title>
+<script type="text/javascript" src="/?cmd=resource&name=jquery.js"></script>
+<style>
+table {
+  font-family: "Helvetica Neue", Helvetica, sans-serif
+}
+caption {
+  text-align: left;
+  color: silver;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 5px;
+}
+
+thead {
+  background: SteelBlue;
+  color: white;
+}
+th,
+td {
+  padding: 5px 10px;
+}
+
+tbody tr:nth-child(even) {
+  background: WhiteSmoke;
+}
+
+tbody tr td:nth-child(2) {
+  text-align:center;
+}
+
+tbody tr td:nth-child(3),
+tbody tr td:nth-child(4) {
+  text-align: right;
+  font-family: monospace;
+}
+
+tfoot {
+  background: SeaGreen;
+  color: white;
+  text-align: right;
+}
+
+tfoot tr th:last-child {
+  font-family: monospace;
+}
+#mq_table{
+	font-size: 13px;
+}
+
+</style>
+</head>
+<body> 
+<h2 style="text-align: center;">BUS服务总线监控管理</h2>
+
+<div align="center">
+
+
+<script type="text/javascript">
+Date.prototype.Format = function (fmt) { //author: meizz 
+    var o = {
+        "M+": this.getMonth() + 1, //月份 
+        "d+": this.getDate(), //日 
+        "h+": this.getHours(), //小时 
+        "m+": this.getMinutes(), //分 
+        "s+": this.getSeconds(), //秒 
+        "q+": Math.floor((this.getMonth() + 3) / 3), //季度 
+        "S": this.getMilliseconds() //毫秒 
+    };
+    if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+    for (var k in o)
+    if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+    return fmt;
+}
+function timeConverter(unixTime){ 
+	var d = new Date(unixTime);
+	return d.Format("yyyy-MM-dd hh:mm:ss"); 
+}
+
+$(document).ready(function(){
+
+$.getJSON('/?cmd=srvls',function(data){ 
+	if(data.state=='false'){
+		alert(data.msg);
+		return;
+	}
+    $.each(data.data, function(key, mq){ 
+    	var type = mq.type==1?'队列':'订阅';
+        $("#mq_table").append(
+			"<tr>\
+				<td>"+ mq.name +"</td>\
+				<td>"+ type +"</td>\
+				<td>"+ mq.worker_size +"</td>\
+				<td>"+ mq.request_size +"</td>\
+				<td>"+ timeConverter(mq.serve_at) +" </td>\
+				<td>\
+					<a href=''>清空消息</a>　\
+					<a href=''>删除服务</a>\
+				</td>\
+			</tr>"
+		);
+    }); 
+    
+}); 
+
+});
+</script> 
+	
+<table>
+	<thead>
+	<tr>
+	<th>服务标识</th>
+	<th>服务类型</th>
+	<th>消费者(服务)</th>
+	<th>未消费消息</th> 
+	<th>最近活动时间</th> 
+	<th>操作</th>
+	</tr>
+	</thead>
+
+<tbody id="mq_table"> 
+
+</tbody>
+
+
+</table> 
+
+</body>
+
+</html>

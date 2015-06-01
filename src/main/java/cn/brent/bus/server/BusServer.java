@@ -188,9 +188,13 @@ public class BusServer {
 		if (this.register_token != null && !register_token.equals(token)) {
 			reply(Protocol.MDPM, sender, "403", "wrong administrator token");
 		}
+		
+		logger.debug(cmd);
 
-		if (cmd.equals("ls")) {
-			monitorLsHandler(sender, msg);
+		if (cmd.equals("srvls")) {
+			monitorSrvLsHandler(sender, msg);
+		}else if (cmd.equals("workls")) {
+			monitorWorkLsHandler(sender, msg);
 		} else if (cmd.equals("clear")) {
 			monitorClearHandler(sender, msg);
 		} else if (cmd.equals("del")) {
@@ -243,7 +247,35 @@ public class BusServer {
 		}
 	}
 
-	private void monitorLsHandler(ZFrame sender, ZMsg msg) {
+	private void monitorWorkLsHandler(ZFrame sender, ZMsg msg) {
+		if (msg.size() != 1) {// clear svc
+			reply(Protocol.MDPM, sender, "400", "service name required");
+			return;
+		}
+		String service_name = msg.popString();
+		ServiceInfo info = services.get(service_name);
+		if (info != null) {
+			List<Map<String, Object>> re = new ArrayList<Map<String, Object>>();
+			
+			for (WorkerInfo w : info.getWorkers()) {
+				Map<String, Object> t = new HashMap<String, Object>();
+				t.put("identity", w.getIdentity());
+				t.put("client_ip", w.getClient_ip());
+				t.put("create_time", w.getCreate_time());
+				t.put("serve_at", w.getServe_at());
+				t.put("expiry", w.getExpiry());
+				t.put("topics", w.getTopics());
+				re.add(t);
+			}
+			reply(Protocol.MDPM, sender, "200", JSONObject.toJSONString(re));
+			reply(Protocol.MDPM, sender, "200", "OK");
+		} else {
+			reply(Protocol.MDPM, sender, "404", String.format("service( %s ), not found", service_name));
+		}
+		
+	}
+	
+	private void monitorSrvLsHandler(ZFrame sender, ZMsg msg) {
 		List<Map<String, Object>> re = new ArrayList<Map<String, Object>>();
 		for (ServiceInfo info : services.values()) {
 			Map<String, Object> t = new HashMap<String, Object>();
@@ -442,6 +474,7 @@ public class BusServer {
 		String register_token = msg.popString();
 		String access_token = msg.popString();
 		String typestr = msg.popString();
+		String ip = msg.popString();
 
 		ServiceInfo service = services.get(service_name);
 		if (this.register_token != null && !this.register_token.equals(register_token.toString())) {
@@ -477,7 +510,7 @@ public class BusServer {
 			logger.info("register service({})", service_name);
 		}
 
-		worker = new WorkerInfo(sender);
+		worker = new WorkerInfo(sender,ip);
 		logger.info("register worker({}:{})", service.getName(), worker.getIdentity());
 		worker.setService(service);
 
@@ -538,6 +571,7 @@ public class BusServer {
 				WorkerInfo worker = service.getWorkers().poll();
 				ZMsg msg = dequeRequest(service);
 				workerCommand(worker.getAddress(), Protocol.MDPW_JOB, msg);
+				worker.updateServe_at();
 			}
 		} else if (service.getType() == Protocol.MODE_PUBSUB) { // pubsub
 			while (service.getRequests().size() > 0) {
@@ -552,6 +586,7 @@ public class BusServer {
 						if (worker.getTopics().contains(topic)) {
 							ZMsg msg_copy = msg.duplicate();
 							workerCommand(worker.getAddress(), Protocol.MDPW_JOB, msg_copy);
+							worker.updateServe_at();
 						}
 					}
 				}
@@ -588,7 +623,7 @@ public class BusServer {
 	private ZMsg dequeRequest(ServiceInfo service) {
 		ZMsg msg = service.getRequests().poll();
 		if (msg != null) {
-			service.setServe_at(System.currentTimeMillis());
+			service.updateServe_at();
 			service.setMq_size(service.getMq_size() - msg.contentSize());
 		}
 		return msg;

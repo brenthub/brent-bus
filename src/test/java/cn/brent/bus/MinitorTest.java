@@ -44,19 +44,28 @@ public class MinitorTest {
 		ClientPool cp=new ClientPool(ctx, "localhost", 15555, 10000, config);
 		
 		BusClient client = cp.borrowClient();
-		ZMsg m=client.monitor("ls");
+		ZMsg m=client.monitor("srvls");
 		m.dump();
 		
 		ZMsg msg=new ZMsg();
 		msg.add("XxxServer");
-		m=client.monitor("","clear",msg);
+		m=client.monitor("","workls",msg);
 		m.dump();
+		
+//		msg=new ZMsg();
+//		msg.add("XxxServer");
+//		m=client.monitor("","clear",msg);
+//		m.dump();
 		
 //		msg=new ZMsg();
 //		msg.add("XxxServer");
 //		m=client.monitor("","del",msg);
 //		m.dump();
-		
+		try {
+			Thread.sleep(1000000000000L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 }

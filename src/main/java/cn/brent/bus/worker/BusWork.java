@@ -15,6 +15,7 @@ import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
 
 import cn.brent.bus.BusException;
+import cn.brent.bus.BusHelper;
 import cn.brent.bus.Protocol;
 import cn.brent.bus.worker.WorkHandler.Mode;
 
@@ -190,6 +191,7 @@ public class BusWork {
 		msg.addLast(this.registerToken);
 		msg.addLast(this.accessToken);
 		msg.addLast(this.mode);
+		msg.addLast(BusHelper.getLocalIp());
 		this.sendCommand(Protocol.MDPW_REG, msg);
 		this.registered=true;
 		

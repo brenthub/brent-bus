@@ -44,8 +44,8 @@ public class ServiceInfo {
 		return serve_at;
 	}
 
-	public void setServe_at(long serve_at) {
-		this.serve_at = serve_at;
+	public void updateServe_at() {
+		this.serve_at = System.currentTimeMillis();
 	}
 
 	public long getMq_size() {
