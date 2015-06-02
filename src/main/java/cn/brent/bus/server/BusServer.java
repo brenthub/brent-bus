@@ -189,8 +189,6 @@ public class BusServer {
 			reply(Protocol.MDPM, sender, "403", "wrong administrator token");
 		}
 		
-		logger.debug(cmd);
-
 		if (cmd.equals("srvls")) {
 			monitorSrvLsHandler(sender, msg);
 		}else if (cmd.equals("workls")) {
@@ -199,8 +197,29 @@ public class BusServer {
 			monitorClearHandler(sender, msg);
 		} else if (cmd.equals("del")) {
 			monitorDelHandler(sender, msg);
+		}  else if (cmd.equals("discon")) {
+			monitorDisconHandler(sender, msg);
 		} else {
 			reply(Protocol.MDPM, sender, "404", "unknown command");
+		}
+	}
+
+	private void monitorDisconHandler(ZFrame sender, ZMsg msg) {
+		if (msg.size() != 1) {
+			reply(Protocol.MDPM, sender, "400", "worker_name required");
+			return;
+		}
+		String worker_name = msg.popString();
+		WorkerInfo worker =workers.get(worker_name);
+		if (worker != null) {
+			workers.remove(worker.getIdentity());
+			worker.getService().getWorkers().remove(worker);
+			ZMsg remsg = new ZMsg();
+			remsg.add("service is going to be destroyed by broker");
+			workerCommand(worker.getAddress(), Protocol.MDPW_DISC, remsg);
+			reply(Protocol.MDPM, sender, "200", "OK");
+		} else {
+			reply(Protocol.MDPM, sender, "404", String.format("worker( %s ), not found", worker_name));
 		}
 	}
 
@@ -268,7 +287,6 @@ public class BusServer {
 				re.add(t);
 			}
 			reply(Protocol.MDPM, sender, "200", JSONObject.toJSONString(re));
-			reply(Protocol.MDPM, sender, "200", "OK");
 		} else {
 			reply(Protocol.MDPM, sender, "404", String.format("service( %s ), not found", service_name));
 		}

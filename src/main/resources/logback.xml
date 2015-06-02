@@ -5,6 +5,11 @@
 			<Pattern>%d{HH:mm:ss} %-5level %logger{80} [%line] - %msg%n</Pattern>
 		</encoder>
 	</appender>
+	
+	<logger name="org.eclipse.jetty" level="INFO" additivity="false">
+		<appender-ref ref="STDOUT"/>
+	</logger>
+	
 	<root>
 		<level value="debug" />
 		<appender-ref ref="STDOUT" />

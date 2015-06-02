@@ -18,6 +18,16 @@ public class MonitorServer {
 	}
 	
 	public void start() {
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				startJetty();
+			}
+		}).start();
+		
+	}
+	
+	public void startJetty(){
 		try {
 			Server server = new Server(monitorPort);
 			ServletContextHandler sch=new ServletContextHandler();
@@ -32,7 +42,4 @@ public class MonitorServer {
 		}
 	}
 	
-	public static void main(String[] args) {
-		new MonitorServer().start();
-	}
 }

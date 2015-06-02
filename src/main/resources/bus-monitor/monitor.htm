@@ -5,60 +5,101 @@
 <title>BUS Monitor</title>
 <script type="text/javascript" src="/?cmd=resource&name=jquery.js"></script>
 <style>
-table {
-  font-family: "Helvetica Neue", Helvetica, sans-serif
-}
-caption {
-  text-align: left;
-  color: silver;
-  font-weight: bold;
-  text-transform: uppercase;
-  padding: 5px;
-}
-
-thead {
-  background: SteelBlue;
-  color: white;
-}
-th,
-td {
-  padding: 5px 10px;
-}
-
-tbody tr:nth-child(even) {
-  background: WhiteSmoke;
-}
-
-tbody tr td:nth-child(2) {
-  text-align:center;
-}
-
-tbody tr td:nth-child(3),
-tbody tr td:nth-child(4) {
-  text-align: right;
-  font-family: monospace;
-}
-
-tfoot {
-  background: SeaGreen;
-  color: white;
-  text-align: right;
-}
-
-tfoot tr th:last-child {
-  font-family: monospace;
-}
-#mq_table{
-	font-size: 13px;
-}
-
+	table {
+	  font-family: "Helvetica Neue", Helvetica, sans-serif
+	}
+	caption {
+	  text-align: left;
+	  color: silver;
+	  font-weight: bold;
+	  text-transform: uppercase;
+	  padding: 5px;
+	}
+	
+	thead {
+	  background: SteelBlue;
+	  color: white;
+	}
+	th,
+	td {
+	  padding: 5px 10px;
+	}
+	
+	tbody tr:nth-child(even) {
+	  background: WhiteSmoke;
+	}
+	
+	tbody tr td:nth-child(2) {
+	  text-align:center;
+	}
+	
+	tbody tr td:nth-child(3),
+	tbody tr td:nth-child(4) {
+	  font-family: monospace;
+	}
+	
+	tfoot {
+	  background: SeaGreen;
+	  color: white;
+	  text-align: right;
+	}
+	
+	tfoot tr th:last-child {
+	  font-family: monospace;
+	}
+	
+	#mq_table,#work_table{
+		font-size: 13px;
+		text-align: center;
+	}
+	
+	.float{
+		display: inline-block;
+		vertical-align: top;
+	}
+	
+	.trSelected {
+	   background: gray !important;
+	}
 </style>
 </head>
-<body> 
-<h2 style="text-align: center;">BUS服务总线监控管理</h2>
-
-<div align="center">
-
+<body style="text-align: center;"> 
+	<h2>BUS服务总线监控管理</h2>
+	<div>
+		<div id="svrdiv" class="float">
+			<table>
+				<thead>
+					<tr>
+					<th>服务标识</th>
+					<th>服务类型</th>
+					<th>消费者(服务)</th>
+					<th>未消费消息</th> 
+					<th>最近活动时间</th> 
+					<th>操作</th>
+					</tr>
+				</thead>
+				<tbody id="mq_table"> 
+				</tbody>
+			</table> 
+		</div>
+		<div id="workdiv" class="float">
+			<table>
+				<thead>
+					<tr>
+					<th>标识</th>
+					<th>IP</th>
+					<th>创建时间</th>
+					<th>最近调用时间</th> 
+					<th>订阅主题</th> 
+					<th>操作</th> 
+					</tr>
+				</thead>
+				<tbody id="work_table"> 
+				</tbody>
+			</table> 
+		</div>
+	</div>
+</body>
 
 <script type="text/javascript">
 Date.prototype.Format = function (fmt) { //author: meizz 
@@ -91,44 +132,98 @@ $.getJSON('/?cmd=srvls',function(data){
     $.each(data.data, function(key, mq){ 
     	var type = mq.type==1?'队列':'订阅';
         $("#mq_table").append(
-			"<tr>\
+			"<tr class='mq' data-id='"+ mq.name +"'>\
 				<td>"+ mq.name +"</td>\
 				<td>"+ type +"</td>\
 				<td>"+ mq.worker_size +"</td>\
 				<td>"+ mq.request_size +"</td>\
 				<td>"+ timeConverter(mq.serve_at) +" </td>\
 				<td>\
-					<a href=''>清空消息</a>　\
-					<a href=''>删除服务</a>\
+					<a href='#' class='clearsvr'>清空消息</a>　\
+					<a href='#' class='delsvr'>删除服务</a>\
 				</td>\
 			</tr>"
 		);
-    }); 
+    });
     
-}); 
+    $(".clearsvr").click (function(){
+    	 var name=$(this).parent().parent().attr("data-id");
+    	 if (!confirm("确认清空【"+name+"】服务消息？")) {
+             return;
+         }
+    	 $.getJSON('/?cmd=clear&name='+name,function(data){ 
+         	if(data.state=='false'){
+         		alert(data.msg);
+         		return;
+         	}
+    	 	location.reload();
+         });
+    });
+    
+    $(".delsvr").click (function(){
+    	var name=$(this).parent().parent().attr("data-id");
+    	if (!confirm("确认删除【"+name+"】服务？")) {
+            return;
+        }
+    	$.getJSON('/?cmd=del&name='+name,function(data){ 
+        	if(data.state=='false'){
+        		alert(data.msg);
+        		return;
+        	}
+	    	location.reload();
+        });
+    });
+    
+    
+    $(".mq").click (function(){
+        var name=$(this).attr("data-id");
+        $(this).parent().children("tr").each(function(){
+        	$(this).removeClass('trSelected');
+        });
+        
+        $(this).addClass('trSelected');
+        $.getJSON('/?cmd=workls&name='+name,function(data){ 
+        	if(data.state=='false'){
+        		alert(data.msg);
+        		return;
+        	}
+        	$("#work_table").html("");
+            $.each(data.data, function(key, mq){ 
+        		var topic=mq.topics?mq.topics:'无';
+        		var sat=mq.serve_at==0?'从未调用':timeConverter(mq.serve_at);
+                $("#work_table").append(
+        			"<tr data-id='"+ mq.identity +"'>\
+        				<td>"+ mq.identity +"</td>\
+        				<td>"+ mq.client_ip +"</td>\
+        				<td>"+ timeConverter(mq.create_time) +"</td>\
+        				<td>"+ sat +"</td>\
+        				<td>"+ topic +" </td>\
+        				<td>\
+        					<a href='#' class='discon'>断开连接</a>　\
+        				</td>\
+        			</tr>"
+        		);
+            });
+            $(".discon").click (function(){
+            	var trp = $(this).parent().parent();
+            	var name=trp.attr("data-id");
+            	if (!confirm("确认断开【"+name+"】连接？")) {
+                    return;
+                }
+            	$.getJSON('/?cmd=discon&name='+name,function(data){ 
+                	if(data.state=='false'){
+                		alert(data.msg);
+                		return;
+                	}
+                	trp.remove();
+                });
+            });
+        });
+    });
+});
+
 
 });
 </script> 
-	
-<table>
-	<thead>
-	<tr>
-	<th>服务标识</th>
-	<th>服务类型</th>
-	<th>消费者(服务)</th>
-	<th>未消费消息</th> 
-	<th>最近活动时间</th> 
-	<th>操作</th>
-	</tr>
-	</thead>
-
-<tbody id="mq_table"> 
-
-</tbody>
-
-
-</table> 
-
-</body>
 
 </html>

@@ -104,39 +104,40 @@ public class BusWork {
 	public void processMsg(){ 
 		this.stop=false;
 		while(!stop){
-			ZMsg res = ZMsg.recvMsg(this.socket);
-			if( res.size() < 3){
-				stop=true;
-				throw new BusException("[<empty> <header>, <cmd>] frames required");
-			}
-			
-			res.pollFirst(); //empty
-			res.pollFirst(); //header
-			String cmd = res.popString();
-			
-			if(Protocol.MDPW_JOB.equals(cmd)){//收到任务
-				if(res.size() < 2){
-					stop=true;
-					throw new BusException("[<sock_id> <msg_id>] frames required");
+			try {
+				ZMsg res = ZMsg.recvMsg(this.socket);
+				if( res.size() < 3){
+					throw new BusException("[<empty> <header>, <cmd>] frames required");
 				}
-				ZFrame  recvSockId = res.unwrap();
-				ZFrame recvMsgId = res.getFirst();
-				ZMsg msg = workHandler.handleRequest(res);
-				res.destroy();
-				if(msg==null||this.workHandler.getMode()!=Mode.MODE_LB){
-					continue;
+				
+				res.pollFirst(); //empty
+				res.pollFirst(); //header
+				String cmd = res.popString();
+				
+				if(Protocol.MDPW_JOB.equals(cmd)){//收到任务
+					if(res.size() < 2){
+						throw new BusException("[<sock_id> <msg_id>] frames required");
+					}
+					ZFrame  recvSockId = res.unwrap();
+					ZFrame recvMsgId = res.getFirst();
+					ZMsg msg = workHandler.handleRequest(res);
+					res.destroy();
+					if(msg==null||this.workHandler.getMode()!=Mode.MODE_LB){
+						continue;
+					}
+					this.reply(recvSockId,recvMsgId, msg);
+					this.sendIdle();//发送空闲指定
+				} else if(Protocol.MDPW_DISC.equals(cmd)){ //服务端异常
+					throw new BusException(res.popString()); 
+				} else if(Protocol.MDPW_SYNC.equals(cmd)){//服务端请求注册
+					res.destroy();
+					this.register();
+				} else {
+					throw new BusException("unknown worker command");
 				}
-				this.reply(recvSockId,recvMsgId, msg);
-				this.sendIdle();//发送空闲指定
-			} else if(Protocol.MDPW_DISC.equals(cmd)){ //服务端异常
+			} catch (Exception e) {
 				stop=true;
-				throw new BusException(res.popString()); 
-			} else if(Protocol.MDPW_SYNC.equals(cmd)){//服务端请求注册
-				res.destroy();
-				this.register();
-			} else {
-				stop=true;
-				throw new BusException("unknown worker command");
+				logger.error("",e);
 			} 
 		} 
 	}

@@ -47,6 +47,7 @@ public class MonitorServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
 		String cmd = req.getParameter("cmd");
+		System.out.println(cmd);
 		if (StringUtils.isEmpty(cmd)) {
 			indexHandler(req, response);
 			return;
@@ -67,6 +68,7 @@ public class MonitorServlet extends HttpServlet {
 		}
 		response.setContentType("application/javascript;charset=utf-8");
 		response.getWriter().write(loadFileContent(name));
+		response.getWriter().close();
 	}
 
 	private void JsonHandler(String cmd,HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
@@ -105,6 +107,15 @@ public class MonitorServlet extends HttpServlet {
 				msg.add(name);
 				ZMsg m=client.monitor("","del",msg);
 				result=m.popString();
+			}else if(cmd.equals("discon")){
+				String name=req.getParameter("name");
+				if(StringUtils.isEmpty(name)){
+					throw new RuntimeException("name is null");
+				}
+				ZMsg msg=new ZMsg();
+				msg.add(name);
+				ZMsg m=client.monitor("","discon",msg);
+				result=m.popString();
 			}else{
 				throw new RuntimeException("unkown cmd");
 			}
@@ -121,7 +132,10 @@ public class MonitorServlet extends HttpServlet {
 			obj.put("state", false);
 			obj.put("msg", e.getMessage());
 		}
+		pool.returnClient(client);
+		System.out.println(obj.toString());
 		response.getWriter().write(obj.toString());
+		response.getWriter().close();
 		response.setStatus(HttpServletResponse.SC_OK);
 		
 	}
@@ -131,6 +145,7 @@ public class MonitorServlet extends HttpServlet {
 		response.setContentType("text/html;charset=utf-8");
 		response.setStatus(HttpServletResponse.SC_OK);
 		response.getWriter().write(loadFileContent("monitor.htm"));
+		response.getWriter().close();
 	}
 
 	@Override
