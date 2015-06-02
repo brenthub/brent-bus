@@ -47,7 +47,6 @@ public class MonitorServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException {
 		String cmd = req.getParameter("cmd");
-		System.out.println(cmd);
 		if (StringUtils.isEmpty(cmd)) {
 			indexHandler(req, response);
 			return;
@@ -133,7 +132,6 @@ public class MonitorServlet extends HttpServlet {
 			obj.put("msg", e.getMessage());
 		}
 		pool.returnClient(client);
-		System.out.println(obj.toString());
 		response.getWriter().write(obj.toString());
 		response.getWriter().close();
 		response.setStatus(HttpServletResponse.SC_OK);
@@ -182,7 +180,7 @@ public class MonitorServlet extends HttpServlet {
 				e.printStackTrace();
 			}
 		}
-//		resourceMap.put(resource, writer.toString());
+		resourceMap.put(resource, writer.toString());
 		return writer.toString();
 	}
 }
