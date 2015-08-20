@@ -27,7 +27,7 @@ public class MonitorServer {
 		
 	}
 	
-	public void startJetty(){
+	protected void startJetty(){
 		try {
 			Server server = new Server(monitorPort);
 			ServletContextHandler sch=new ServletContextHandler();
