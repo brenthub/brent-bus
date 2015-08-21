@@ -1,24 +1,16 @@
 package cn.brent.bus.rpc;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMsg;
 
-import cn.brent.bus.BusException;
 import cn.brent.bus.worker.WorkHandler;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 
 public class SubsRpcHandler implements WorkHandler {
 
@@ -56,13 +48,16 @@ public class SubsRpcHandler implements WorkHandler {
 	@Override
 	public ZMsg handleRequest(ZMsg request) {
 		String text=request.popString();
-		System.out.println(text);
-		JSONObject res;
+		Object res;
 		try {
 			res = (JSONObject) JSON.parse(text);
+		} catch (Exception e) {
+			res=text;
+		}
+		try {
 			handler.handle(res);
 		} catch (Exception e) {
-			handler.handle(text);
+			logger.error("handleRequest",e);
 		}
 		return null;
 	}

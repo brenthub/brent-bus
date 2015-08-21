@@ -61,7 +61,7 @@ public class ClientTest {
 	@Test
 	public void request() throws InterruptedException{
 		Context ctx = ZMQ.context(1);
-		BusClient client = new BusClient(ctx);
+		BusClient client = new BusClient(ctx,"localhost:15555");
 		ZMsg req = new ZMsg();
 		req.add("ls");
 		ZMsg res = client.request("test", "regToken", req);
@@ -73,7 +73,7 @@ public class ClientTest {
 		Context ctx = ZMQ.context(1);
 		ClientPoolConfig config=new ClientPoolConfig();
 		config.setMaxTotal(100);
-		ClientPool cp=new ClientPool(ctx, "localhost", 15555, 10000, config);
+		ClientPool cp=new ClientPool(ctx, new String[]{"localhost:15555"}, 10000, config);
 		
 		BusClient client = cp.borrowClient();
 		ZMsg req = new ZMsg();

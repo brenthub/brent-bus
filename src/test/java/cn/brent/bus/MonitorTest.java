@@ -24,8 +24,8 @@ public class MonitorTest {
 		new BusServer(ZMQ.context(1)).start();
 		WorkerContext wc = new WorkerContext(ZMQ.context(1));
 		RpcWorkHandler rpc = new RpcWorkHandler("XxxServer");
-		rpc.addModule("test", new XxxServer());
-		rpc.addModule("a", new XxxServer());
+		rpc.addVersion("test", new XxxServer());
+		rpc.addVersion("a", new XxxServer());
 		wc.registerWorker(rpc, 3);
 
 		SubsMsgHandler sub = new SubsMsgHandler() {
@@ -42,7 +42,7 @@ public class MonitorTest {
 		Context ctx = ZMQ.context(1);
 		ClientPoolConfig config = new ClientPoolConfig();
 		config.setMaxTotal(100);
-		ClientPool cp = new ClientPool(ctx, "localhost", 15555, 10000, config);
+		ClientPool cp = new ClientPool(ctx, new String[]{"localhost:15555"}, 10000, config);
 
 		BusClient client = cp.borrowClient();
 		ZMsg m = client.monitor("srvls");

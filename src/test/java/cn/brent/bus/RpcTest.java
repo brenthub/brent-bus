@@ -49,8 +49,8 @@ public class RpcTest {
 		new BusServer(ZMQ.context(1)).start();
 		WorkerContext wc=new WorkerContext(ZMQ.context(1));
 		RpcWorkHandler rpc=new RpcWorkHandler("XxxServer");
-		rpc.addModule("test",new XxxServer());
-		rpc.addModule("a",new XxxServer());
+		rpc.addVersion("test",new XxxServer());
+		rpc.addVersion("a",new XxxServer());
 		wc.registerWorker(rpc,1);
 		
 		SubsMsgHandler sub=new SubsMsgHandler() {
@@ -66,7 +66,7 @@ public class RpcTest {
 	public void testrpc(){
 		Context ctx = ZMQ.context(1);
 		ClientPoolConfig config=new ClientPoolConfig();
-		ClientPool cp=new ClientPool(ctx, "localhost", 15555, 10000, config);
+		ClientPool cp=new ClientPool(ctx, new String[]{"localhost:15555" }, 10000, config);
 		Rpc rpc=new Rpc(cp,"XxxServer", "test");
 		
 		String s=rpc.invoke("hello",new Class[]{String.class},"tom");
@@ -77,15 +77,17 @@ public class RpcTest {
 	
 	@Test
 	public void testRpcFactory(){
-		IXxxServer x=RpcFactory.getService(IXxxServer.class, "bus://localhost:15555/XxxServer?module=test");
-		IXxxServer a=RpcFactory.getService(IXxxServer.class, "bus://localhost:15555/XxxServer?module=a");
+		RpcFactory f=new RpcFactory(new String[]{"localhost:15555"});
+		IXxxServer x=f.getService(IXxxServer.class, "XxxServer?version=test");
+		IXxxServer a=f.getService(IXxxServer.class, "XxxServer?version=a");
 		System.out.println(x.print());
 		System.out.println(a.hello("Brent"));
 	}
 	
 	@Test
 	public void testSubs(){
-		SubsService a=RpcFactory.getPubService("bus://localhost:15555/tstopic?topic=top1");
+		RpcFactory f=new RpcFactory(new String[]{"localhost:15555"});
+		SubsService a=f.getPubService("tstopic?topic=top1");
 		List<String> parm=new ArrayList<String>();
 		parm.add("aa");
 		a.publish(parm);

@@ -37,15 +37,15 @@ public class RpcWorkHandler implements WorkHandler {
 		this.regToken=regToken;
 	}
 
-	public void addModule(String module, Object service) {
-		this.initCommandTable(module, service);
+	public void addVersion(String version, Object service) {
+		this.initCommandTable(version, service);
 	}
 	
-	public void addModule(Object service) {
+	public void addVersion(Object service) {
 		this.initCommandTable("", service);
 	}
 	
-	private void initCommandTable(String module, Object service) {
+	private void initCommandTable(String version, Object service) {
 		Class<?>[] classes = new Class<?>[service.getClass().getInterfaces().length + 1];
 		classes[0] = service.getClass();
 		for (int i = 1; i < classes.length; i++) {
@@ -71,9 +71,9 @@ public class RpcWorkHandler implements WorkHandler {
 						if ("".equals(method)) {
 							method = m.getName();
 						}
-						String key = module + ":" + method + ":" + paramMD5;
+						String key = version + ":" + method + ":" + paramMD5;
 						if (this.methods.containsKey(key)) {
-							logger.info(module + "." + method + " duplicated");
+							logger.info(version + "." + method + " duplicated");
 						} else {
 							logger.info("register " + service.getClass().getSimpleName() + "\t" + key);
 						}
@@ -125,7 +125,7 @@ public class RpcWorkHandler implements WorkHandler {
 		Throwable error = null;
 		Object result = null;
 		JSONObject req = null;
-		String module = "";
+		String version = "";
 		String method = null;
 		String reqid = null;
 		String clientip = null;
@@ -146,13 +146,13 @@ public class RpcWorkHandler implements WorkHandler {
 
 		if (error == null) {
 			try {
-				module = req.getString(Rpc.P_MODULE);
+				version = req.getString(Rpc.P_VERSION);
 				method = req.getString(Rpc.P_METHOD);
 				args = req.getJSONArray(Rpc.P_PARAMS);
 				reqid = req.getString(Rpc.P_REQID);
 				clientip = req.getString(Rpc.P_CLIENT_IP);
 				log.append(reqid).append("\t").append(clientip).append("\t");
-				log.append(module).append("\t").append(method).append("\t").append(args);
+				log.append(version).append("\t").append(method).append("\t").append(args);
 				paramTypes = req.getJSONArray(Rpc.P_PARAMTYPES);
 				client = req.getString(Rpc.LANG_KEY);
 				if (paramTypes != null) {
@@ -167,20 +167,20 @@ public class RpcWorkHandler implements WorkHandler {
 			} catch (Exception e) {
 				error = e;
 			}
-			if (module == null) {
-				module = "";
+			if (version == null) {
+				version = "";
 			}
 			if (method == null) {
 				error = new BusException("missing method name");
 			}
 		}
 
-		String key = module + ":" + method + ":" + paramMD5;
+		String key = version + ":" + method + ":" + paramMD5;
 		if (error == null) {
 			if (this.methods.containsKey(key)) {
 				target = this.methods.get(key);
 			} else {
-				String key2 = module + ":" + method;
+				String key2 = version + ":" + method;
 				if (this.methods.containsKey(key2)) {
 					target = this.methods.get(key2);
 				} else {

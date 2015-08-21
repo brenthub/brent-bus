@@ -27,7 +27,7 @@ public class Rpc {
 	public static final String DEFAULT_ENCODING = "UTF-8";
 
 	public static final String P_ID = "id";
-	public static final String P_MODULE = "module";
+	public static final String P_VERSION = "version";
 	public static final String P_METHOD = "method";
 	public static final String P_PARAMS = "params";
 	public static final String P_REQID = "reqid";
@@ -39,7 +39,7 @@ public class Rpc {
 	private ClientPool clientPool;
 
 	private String token = "";
-	private String module = "";
+	private String version = "";
 	private String serviceName;
 
 	private String encoding;
@@ -47,16 +47,16 @@ public class Rpc {
 	
 	private Integer timeout;
 
-	public Rpc(ClientPool clientPool,String serviceName, String module,String token) {
+	public Rpc(ClientPool clientPool,String serviceName, String version,String token) {
 		this.clientPool = clientPool;
 		this.encoding = DEFAULT_ENCODING;
 		this.serviceName=serviceName;
-		this.module = module;
+		this.version = version;
 		this.token = token;
 	}
 	
-	public Rpc(ClientPool clientPool,String serviceName, String module) {
-		this(clientPool,serviceName, module, "");
+	public Rpc(ClientPool clientPool,String serviceName, String version) {
+		this(clientPool,serviceName, version, "");
 	}
 
 	public <T> T invoke(String method, Object... args) {
@@ -72,7 +72,7 @@ public class Rpc {
 
 		JSONObject req = new JSONObject();
 		req.put(P_ID, "jsonrpc");
-		req.put(P_MODULE, this.module);
+		req.put(P_VERSION, this.version);
 		req.put(P_METHOD, method);
 		req.put(P_PARAMS, args);
 

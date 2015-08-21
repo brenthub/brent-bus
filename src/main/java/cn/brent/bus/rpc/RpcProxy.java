@@ -13,7 +13,7 @@ public class RpcProxy implements InvocationHandler {
 	private String serviceName;
 	private String encoding = "UTF8";
 	private String accessToken = "";
-	private String module = "";
+	private String version = "";
 	private Integer timeout;
 	private boolean log = true;
 
@@ -39,13 +39,13 @@ public class RpcProxy implements InvocationHandler {
 		if (kvs.containsKey("accessToken")) {
 			this.accessToken = kvs.get("accessToken");
 		}
-		if (kvs.containsKey("module")) {
-			this.module = kvs.get("module");
+		if (kvs.containsKey("version")) {
+			this.version = kvs.get("version");
 		}
 		if (kvs.containsKey("log")) {
 			this.log = Boolean.valueOf(kvs.get("log"));
 		}
-		this.rpc = new Rpc(this.clientPool, this.serviceName, module, accessToken);
+		this.rpc = new Rpc(this.clientPool, this.serviceName, version, accessToken);
 		if (timeout != null) {
 			this.rpc.setTimeout(timeout);
 		}
@@ -73,7 +73,7 @@ public class RpcProxy implements InvocationHandler {
 		} else if (methodName.equals("hashCode") && params.length == 0) {
 			return new Integer(this.serviceUrl.hashCode());
 		} else if (methodName.equals("toString") && params.length == 0) {
-			return "ZBusProxy[" + this.serviceUrl + "]";
+			return "BusProxy[" + this.serviceUrl + "]";
 		}
 		return REMOTE_METHOD_CALL;
 	}

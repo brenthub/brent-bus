@@ -36,7 +36,7 @@ public class MonitorServlet extends HttpServlet {
 		Context ctx = ZMQ.context(1);
 		ClientPoolConfig config=new ClientPoolConfig();
 		config.setMaxTotal(10);
-		pool=new ClientPool(ctx, "localhost", serverPort, 10000, config);
+		pool=new ClientPool(ctx, new String[]{"localhost:"+serverPort}, 10000, config);
 	}
 	
 	/**

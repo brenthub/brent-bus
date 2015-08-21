@@ -17,7 +17,7 @@ public class SubsServiceImpl implements SubsService {
 	
 	Logger logger =LoggerFactory.getLogger(SubsServiceImpl.class);
 
-	private  ClientPool pool;
+	private ClientPool pool;
 	private String serviceName;
 	private String topic;
 	private String accessToken = "";

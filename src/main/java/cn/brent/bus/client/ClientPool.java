@@ -1,10 +1,14 @@
 package cn.brent.bus.client;
 
+import java.util.Random;
+
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Context;
 
@@ -15,7 +19,7 @@ public class ClientPool {
 	protected Context ctx;
 	protected GenericObjectPool<BusClient> internalPool;
 
-	public ClientPool(Context ctx,String host,int port,Integer timeout,ClientPoolConfig config) {
+	public ClientPool(Context ctx,String[] brokers,Integer timeout,ClientPoolConfig config) {
 		if (ctx == null) {
 			this.ctx = ZMQ.context(1);
 		}else{
@@ -25,21 +29,17 @@ public class ClientPool {
 		if(config==null){
 			config = new ClientPoolConfig();
 		}
-		this.internalPool = new GenericObjectPool<BusClient>(new BusClientFactory(this.ctx,host,port,timeout),config);
+		this.internalPool = new GenericObjectPool<BusClient>(new BusClientFactory(this.ctx,brokers,timeout),config);
 	}
 	
-	public ClientPool(String host,int port,Integer timeout) {
-		this(null, host, port,timeout,null);
+	public ClientPool(String[] brokers,Integer timeout) {
+		this(null, brokers,timeout,null);
 	}
 	
-	public ClientPool(String host,int port) {
-		this(host, port,null);
+	public ClientPool(String[] brokers) {
+		this(brokers,null);
 	}
 	
-	public ClientPool() {
-		this("localhost", 15555);
-	}
-
 	public BusClient borrowClient() {
 		try {
 			return (BusClient) internalPool.borrowObject();
@@ -73,24 +73,22 @@ public class ClientPool {
 	}
 
 	public class BusClientFactory extends BasePooledObjectFactory<BusClient> {
+		
+		protected Logger logger=LoggerFactory.getLogger(getClass());
 
 		private Context ctx;
-		private String host;
-		private int port;
+		private String[] brokers;
 		private Integer timeout;
+		private Random random=new Random();
 		
-		public BusClientFactory(Context ctx, String host, int port) {
-			super();
-			this.ctx = ctx;
-			this.host = host;
-			this.port = port;
+		public BusClientFactory(Context ctx, String[] brokers) {
+			this(ctx, brokers, null);
 		}
 		
-		public BusClientFactory(Context ctx, String host, int port,Integer timeout) {
+		public BusClientFactory(Context ctx, String[] brokers,Integer timeout) {
 			super();
 			this.ctx = ctx;
-			this.host = host;
-			this.port = port;
+			this.brokers = brokers;
 			this.timeout=timeout;
 		}
 
@@ -99,11 +97,11 @@ public class ClientPool {
 			try {
 				int rc = client.getObject().probe();
 				if (rc != 0) {
-					System.err.println("validate error");
+					logger.error("validate error");
 				}
 				return rc == 0;
 			} catch (final Exception e) {
-				e.printStackTrace();
+				logger.error(e.getMessage(),e);
 				return false;
 			}
 		}
@@ -115,7 +113,8 @@ public class ClientPool {
 
 		@Override
 		public BusClient create() throws Exception {
-			BusClient client=new BusClient(ctx, host, port);
+			String broker=brokers[random.nextInt(brokers.length)];
+			BusClient client=new BusClient(ctx, broker);
 			if(timeout!=null){
 				client.setTimeout(timeout);
 			}

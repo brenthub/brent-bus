@@ -15,31 +15,24 @@ public class BusClient {
 
 	private String id;
 	
-	private String host = "localhost";
+	private String broker = "localhost:15555";
 	
-	private int port = 15555;
-
 	private Context ctx;
 	
 	private Socket socket;
 	
 	private Integer timeout=3000;
 
-	public BusClient(Context ctx) {
-		this(ctx, "localhost", 15555);
+	public BusClient(Context ctx, String broker) {
+		this(ctx, broker, null);
 	}
 
-	public BusClient(Context ctx, String host, int port) {
-		this(ctx, host, port, null);
-	}
-
-	public BusClient(Context ctx, String host, int port, String id) {
+	public BusClient(Context ctx, String broker, String id) {
 		if (ctx == null)
 			throw new IllegalArgumentException("context is null");
-
+		
 		this.ctx = ctx;
-		this.host = host;
-		this.port = port;
+		this.broker = broker;
 		this.id = id;
 		this.reconnect();
 	}
@@ -60,7 +53,7 @@ public class BusClient {
 		if(id!=null){
 			this.socket.setIdentity(id.getBytes());
 		}
-		String address = String.format("tcp://%s:%d", host, port);
+		String address = String.format("tcp://%s", broker);
 		this.socket.connect(address);
 		if(this.timeout!=null){
 			this.socket.setReceiveTimeOut(this.timeout);
@@ -225,23 +218,8 @@ public class BusClient {
 		return id;
 	}
 
-	public void setId(String id) {
-		this.id = id;
+	public String getBroker() {
+		return broker;
 	}
-
-	public String getHost() {
-		return host;
-	}
-
-	public void setHost(String host) {
-		this.host = host;
-	}
-
-	public int getPort() {
-		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
-	}
+	
 }
