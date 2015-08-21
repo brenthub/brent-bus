@@ -60,11 +60,11 @@ public class RpcFactory {
 	}
 	
 	/**
-	 * TRADE?encoding=utf8
+	 * TRADE?version=1.0
 	 *
 	 * parameters after ? got default values
 	 * 
-	 * encoding=UTF8 module= token= log=true
+	 * version=1.0 token= log=true
 	 * 
 	 * @param api
 	 * @param serviceURL
@@ -88,6 +88,16 @@ public class RpcFactory {
 		return (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), interfaces, handler);
 	}
 	
+	/**
+	 * tstopic
+	 *
+	 * parameters after ? got default values
+	 * 
+	 * topic=top1
+	 * 
+	 * @param serviceURL
+	 * @return
+	 */
 	public SubsService getPubService(String serviceURL) {
 		SubsService service = null;
 		Map<String, String> kvs = parseAPI(SubsService.class, serviceURL);
