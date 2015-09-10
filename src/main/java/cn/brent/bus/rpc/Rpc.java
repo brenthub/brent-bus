@@ -144,6 +144,7 @@ public class Rpc {
 			}
 			res = (JSONObject) JSON.parse(text);
 		} catch (Exception e) {
+			e.printStackTrace();
 			text = text.replace("@type", "unkown-class"); // try disable class
 															// feature
 			try {
